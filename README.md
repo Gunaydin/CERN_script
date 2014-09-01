@@ -1,4 +1,4 @@
 CERN_script
 ===========
 
-CERN scrip
+CERN script
