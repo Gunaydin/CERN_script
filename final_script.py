@@ -74,10 +74,10 @@ def histogram_values(time_begin, time_end):
 	for entry in tree:
 		if between_times(entry.GpsTime) and snijden(time_begin, time_end, entry.GpsTime):
 			mass_histogram.Fill(entry.D_M)
-			lifetime_histogram.Fill(eval(LT))
-		elif snijden(time_begin, time_end, entry.GspTime) and not between_times(entry.GpsTime):
+			lifetime_histogram.Fill(eval(LT()))
+		elif snijden(time_begin, time_end, entry.GpsTime) and not between_times(entry.GpsTime):
 			mass_histogram_b.Fill(entry.D_M)
-			lifetime_histogram_b.Fill(eval(LT))
+			lifetime_histogram_b.Fill(eval(LT()))
 	mass_x = RooRealVar("mass_x","mass_x",1830,1900)
 	lifetime_x = RooRealVar("lifetime_x","lifetime_x",-3,3)
 	m = RooRealVar("m","m test",300)
