@@ -45,8 +45,11 @@ def between_times(GpsTime):
 	else:
 		return false
 
-def snijden(time_begin, time_end, GspTime):
-	return true
+def snijden(time_begin, time_end, GpsTime):
+	if time_begin <= GpsTime <= time_end:
+		return true
+	else:
+		return false
 
 
 def histogram_values(time_begin, time_end):
@@ -63,7 +66,7 @@ def histogram_values(time_begin, time_end):
 	mass_histogram_b = TH1F("mass_histogram","mass_histogram",1000,1000,3000)
 	lifetime_histogram_b = TH1F("lifetime_histogram","lifetime_histogram",1000,-3,3)
 	for entry in tree:
-		if between_times(entry.GpsTime) and snijden(time_begin, time_end, entry.GspTime):
+		if between_times(entry.GpsTime) and snijden(time_begin, time_end, entry.GpsTime):
 			mass_histogram.Fill(entry.D_M)
 			lifetime_histogram.Fill(eval(LT)))
 		elif snijden(time_begin, time_end, entry.GspTime) and not between_times(entry.GpsTime):
@@ -100,11 +103,15 @@ def histogram_values(time_begin, time_end):
 
 class D_meson:
 	print("Script draaien")
+	sys.stdout.flush()
 	num = 1	
 	times = sort_parts()
-	while not num == 12:
+	while not num == 13:
 		time_begin = times[num]
-		time_end = times[num+1]
+		if num < 12:
+			time_end = times[num+1]
+		elif num == 12:
+			time_end = times[12] + (times[11] - times[10])
 		lifetime, signal_value, backround_value = histogram_values(time_begin, time_end)
 		print("{0} | Lifetime = {1} | Signal = {2} | Background = {4}".format(num, lifetime, signal_value, backround_value))
 		sys.stdout.flush()
