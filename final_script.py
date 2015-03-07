@@ -27,12 +27,18 @@ def low_high_time():
 	print("Laagste en hoogste tijden berekenen - klaar")
 	sys.stdout.flush()
 	return (low_time, high_time)
+
+
 def sort_parts():
 	print("Data verdelen in twaalf stukken")
 	sys.stdout.flush()
 	low_time, high_time = low_high_time()
 	timeblocks = (high_time - low_time)/12
 	tijden = range(low_time, high_time, timeblocks)
+	tijd_count = 0
+	for tijd in tijden:
+		tijd_count = tijd_count + 1
+		print("	{0} | {1}".format(tijd_count, tijd))
 	print("Data verdelen in twaalf stukken - klaar")
 	sys.stdout.flush()
 	return tijden
@@ -42,26 +48,29 @@ def between_times(GpsTime):
 	tijden = range(1302847200000000, 1319731200000000, 86400000000)
 	for tijd in tijden:
 		if tijd <= GpsTime <= tijd + 36000000000:
-			return true
+			return True
 			break
 	else:
-		return false
+		return False
 
 def snijden(time_begin, time_end, GpsTime):
 	if time_begin <= GpsTime <= time_end:
-		return true
+		return True
 	else:
-		return false
+		return False
 
 
 def histogram_values(time_begin, time_end):
 	print("Waarden levensduur en massa (voorgrond/achtergrond) berekenen")
 	sys.stdout.flush()
-	if not mass_histogram and not lifetime_histogram and not mass_histogram_b and not lifetime_histogram_b:
-		mass_histogram = TH1F("mass_histogram","mass_histogram",1000,1000,3000)
-		lifetime_histogram = TH1F("lifetime_histogram","lifetime_histogram",1000,-3,3)
-		mass_histogram_b = TH1F("mass_histogram","mass_histogram",1000,1000,3000)
-		lifetime_histogram_b = TH1F("lifetime_histogram","lifetime_histogram",1000,-3,3)
+	mass_histogram = None
+	lifetime_histogram = None
+	mass_histogram_b = None
+	lifetime_histogram_b = None
+	mass_histogram = TH1F("mass_histogram","mass_histogram",1000,1000,3000)
+	lifetime_histogram = TH1F("lifetime_histogram","lifetime_histogram",1000,-3,3)
+	mass_histogram_b = TH1F("mass_histogram","mass_histogram",1000,1000,3000)
+	lifetime_histogram_b = TH1F("lifetime_histogram","lifetime_histogram",1000,-3,3)
 	for entry in tree:
 		if between_times(entry.GpsTime) and snijden(time_begin, time_end, entry.GpsTime):
 			mass_histogram.Fill(entry.D_M)
@@ -101,15 +110,12 @@ def histogram_values(time_begin, time_end):
 class D_meson:
 	print("Script draaien")
 	sys.stdout.flush()
-	num = 1	
+	num = 0
 	times = sort_parts()
-	while not num == 13:
+	while not num == 12:
 		time_begin = times[num]
-		if num < 12:
-			time_end = times[num+1]
-		elif num == 12:
-			time_end = times[12] + (times[11] - times[10])
-		print("	{0} | GpsTime(UnixTime) tussen {1} en {2}".format(time_begin, time_end)
+		time_end = times[num+1]
+		print("	{0} | GpsTime(UnixTime) tussen {1} en {2}".format(num, time_begin, time_end))
 		lifetime, signal_value, backround_value = histogram_values(time_begin, time_end)
 		print("	{0} | Lifetime = {1} | Signal = {2} | Background = {4}".format(num, lifetime, signal_value, backround_value))
 		sys.stdout.flush()
