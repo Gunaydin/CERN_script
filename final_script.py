@@ -67,9 +67,9 @@ def histogram_values(time_begin, time_end):
 	lifetime_histogram = None
 	mass_histogram_b = None
 	lifetime_histogram_b = None
-	mass_histogram = TH1F("mass_histogram","mass_histogram",1000,1000,3000)
+	mass_histogram = TH1F("mass_histogram","mass_histogram",1000,1830,1900)
 	lifetime_histogram = TH1F("lifetime_histogram","lifetime_histogram",1000,-3,3)
-	mass_histogram_b = TH1F("mass_histogram","mass_histogram",1000,1000,3000)
+	mass_histogram_b = TH1F("mass_histogram","mass_histogram",1000,1830,1900)
 	lifetime_histogram_b = TH1F("lifetime_histogram","lifetime_histogram",1000,-3,3)
 	for entry in tree:
 		if between_times(entry.GpsTime) == True and snijden(time_begin, time_end, entry.GpsTime) == True:
@@ -91,8 +91,8 @@ def histogram_values(time_begin, time_end):
 	tshift = RooRealVar("thshift","tshift",0)
 	alpha = RooRealVar("alpha","alpha",100)
 	vlambda = RooRealVar("vlambda","vlambda",1)
-	signal = RooRealVar("g1frac","g1frac test",0.3,0.0,0.5)
-	background = RooRealVar("g2frac","g2frac test",0.05,0.0,0.1)
+	signal = RooRealVar("g1frac","g1frac test",0.3*2700000,1,3000000)
+	background = RooRealVar("g2frac","g2frac test",0.05*2700000,1,3000000)
 	hdata = RooDataHist("data","plotOn test data with x",RooArgList(mass_x),mass_histogram)
 	hdatalt = RooDataHist("datalt","datalt",RooArgList(lifetime_x),lifetime_histogram)
 	m.setConstant(kFALSE)
@@ -101,7 +101,7 @@ def histogram_values(time_begin, time_end):
 	model = RooGaussian("model","gauss test",mass_x,m,s)
 	model2 = RooExponential("model2","exponential test",mass_x,a)
 	modelsum = RooAddPdf("modelsum","model+model2",RooArgList(model,model2),RooArgList(signal,background))
-	modeldecay = RooGenericPdf("modeldecay","model of the decay","(1 - exp[ -(lifetime_x-tshift)/alpha ]) * exp[ - vlambda * t]",RooArgList(lifetime_x,tshift,alpha,vlambda))
+	modeldecay = RooGenericPdf("modeldecay","model of the decay","(1 - exp[ -(lifetime_x-tshift)/alpha ]) * exp[ - vlambda * lifetime_x]",RooArgList(lifetime_x,tshift,alpha,vlambda))
 	frame = mass_x.frame()
 	framelt = lifetime_x.frame()
 	modelsum.fitTo(hdata)
