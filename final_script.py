@@ -4,8 +4,21 @@ from datetime import datetime
 from time import mktime
 import math
 import sys
+import re
 
-tree = TFile.Open("root_real_data.root").Get("DecayTree")
+# SETTINGS	
+# Name of the .root file, example: "root_real_data.root"
+name_root_file = "root_real_data.root"
+# Name of the tree in the .roor file to load, example: "DecayTree"
+name_tree_in_root_file = "DecayTree"
+# Number of parts to cut the data in, example: 12
+parts_to_cut_data_in = 12
+# Part of the day to cut the data in
+starting_hour = 8
+ending_hour = 18
+
+hfile = TFile.Open(name_root_file)
+tree = hfile.Get(name_tree_in_root_file)
 
 def sign(num):
 	if num > 0 or (num == 0 and math.atan2(num, -1.0) > 0.0):
@@ -13,14 +26,15 @@ def sign(num):
 	else:
 		return -1.0
 
-
 def converttime(time):
-	if not ":" in time:
+	if len(str(time)) == 1 or len(str(time)) == 2:
+		newtime = int(int(time)*3600*1000000)
+	elif not ":" in str(time):
 		unixtime = time/1000000
 		newtime = datetime.fromtimestamp(unixtime).strftime("%Y-%m-%d %H:%M:%S")
 	else:
 		newtimeseconds = mktime(datetime.strptime(time, "%Y-%m-%d %H:%M:%S").timetuple())
-		newtime = newtimeseconds*1000000
+		newtime = int(newtimeseconds*1000000)
 	return newtime
 
 def low_high_time():
@@ -44,7 +58,7 @@ def sort_parts():
 	print("Data verdelen in twaalf stukken")
 	sys.stdout.flush()
 	low_time, high_time = low_high_time()
-	timeblocks = (high_time - low_time)/12
+	timeblocks = (high_time - low_time)/parts_to_cut_data_in
 	tijden = range(low_time, high_time, timeblocks)
 	tijd_count = 0
 	for tijd in tijden:
@@ -55,10 +69,36 @@ def sort_parts():
 	return tijden
 
 
-def between_times(GpsTime):
-	tijden = range(1302847200000000, 1319731200000000, 86400000000)
+def between_times(GpsTime,time_begin,time_end):
+	timebegin = converttime(time_begin)
+	timeend = converttime(time_end)
+	by = re.search(r'([0-9][0-9][0-9][0-9])-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]',timebegin)
+	bm = re.search(r'[0-9][0-9][0-9][0-9]-([0-9][0-9])-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]',timebegin)
+	bd = re.search(r'[0-9][0-9][0-9][0-9]-[0-9][0-9]-([0-9][0-9]) [0-9][0-9]:[0-9][0-9]:[0-9][0-9]',timebegin)
+	bh = re.search(r'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ([0-9][0-9]):[0-9][0-9]:[0-9][0-9]',timebegin)
+	if int(bh.group(1)) < starting_hour:
+		bd = int(bd.group(1)) + 1
+	ey = re.search(r'([0-9][0-9][0-9][0-9])-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]',timeend)
+	em = re.search(r'[0-9][0-9][0-9][0-9]-([0-9][0-9])-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]',timeend)
+	ed = re.search(r'[0-9][0-9][0-9][0-9]-[0-9][0-9]-([0-9][0-9]) [0-9][0-9]:[0-9][0-9]:[0-9][0-9]',timeend)
+	eh = re.search(r'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ([0-9][0-9]):[0-9][0-9]:[0-9][0-9]',timeend)
+	if int(eh.group(1)) > ending_hour:
+		ed = int(ed.group(1)) - 1
+#	begintime = converttime("2011-04-15 08:00:00")
+	starttime = "{0}-{1}-{2} 0{3}:00:00".format(by.group(1),bm.group(1),bd.group(1),starting_hour)
+	begintime = converttime(starttime)
+	print(starttime)
+	sys.stdout.flush()
+#	endingtime = converttime("2011-10-27 18:00:00")
+	endtime = "{0}-{1}-{2} {3}:00:00".format(ey.group(1),em.group(1),ed.group(1),ending_hour)
+	endingtime = converttime(endtime)
+	print(endtime)
+	sys.stdout.flush()
+	hoursinterval = converttime(10)
+	day = converttime(24)
+	tijden = range(begintime, endingtime, day)
 	for tijd in tijden:
-		if tijd <= GpsTime <= tijd + 36000000000:
+		if tijd <= GpsTime <= tijd + hoursinterval:
 			return True
 			break
 	else:
@@ -83,32 +123,30 @@ def histogram_values(time_begin, time_end):
 	mass_histogram_b = TH1F("mass_histogram","mass_histogram",1000,1830,1900)
 	lifetime_histogram_b = TH1F("lifetime_histogram","lifetime_histogram",1000,-3,3)
 	for entry in tree:
-		if between_times(entry.GpsTime) == True and snijden(time_begin, time_end, entry.GpsTime) == True:
+		if between_times(entry.GpsTime,time_begin,time_end) == True and snijden(time_begin, time_end, entry.GpsTime) == True:
 			mass_histogram.Fill(entry.D_M)
 			lifetime_histogram.Fill(eval(LT()))
-			print("	{0}".format(entry.GpsTime))
-			sys.stdout.flush()
-		elif snijden(time_begin, time_end, entry.GpsTime) == True and between_times(entry.GpsTime) == False:
+#			print("	{0} - {1}".format(entry.GpsTime,converttime(entry.GpsTime)))
+#			sys.stdout.flush()
+		elif snijden(time_begin, time_end, entry.GpsTime) == True and between_times(entry.GpsTime,time_begin,time_end) == False:
 			mass_histogram_b.Fill(entry.D_M)
 			lifetime_histogram_b.Fill(eval(LT()))
-			print(entry.GpsTime)
-			sys.stdout.flush()
+#			print(entry.GpsTime)
+#			sys.stdout.flush()
 	mass_x = RooRealVar("mass_x","mass_x",1830,1900)
 	lifetime_x = RooRealVar("lifetime_x","lifetime_x",-3,3)
 	m = RooRealVar("m","m test",300)
 	s = RooRealVar("s","s test",500)
 	a = RooRealVar("a","a test",0.0001,0.0002,0.0)
-	t = RooRealVar("t","t",0,2)
 	tshift = RooRealVar("thshift","tshift",0)
 	alpha = RooRealVar("alpha","alpha",100)
-	vlambda = RooRealVar("vlambda","vlambda",1)
+	vlambda = RooRealVar("vlambda","vlambda",1,1,100000)
 	signal = RooRealVar("g1frac","g1frac test",0.3*2700000,1,3000000)
 	background = RooRealVar("g2frac","g2frac test",0.05*2700000,1,3000000)
 	hdata = RooDataHist("data","plotOn test data with x",RooArgList(mass_x),mass_histogram)
 	hdatalt = RooDataHist("datalt","datalt",RooArgList(lifetime_x),lifetime_histogram)
 	m.setConstant(kFALSE)
 	s.setConstant(kFALSE)
-	vlambda.setConstant(kFALSE)
 	model = RooGaussian("model","gauss test",mass_x,m,s)
 	model2 = RooExponential("model2","exponential test",mass_x,a)
 	modelsum = RooAddPdf("modelsum","model+model2",RooArgList(model,model2),RooArgList(signal,background))
@@ -125,6 +163,7 @@ def histogram_values(time_begin, time_end):
 	background_value = background.getVal()
 	print("Waarden levensduur en massa (voorgrond/achtergrond) berekenen - klaar")
 	sys.stdout.flush()
+	framelt.Draw()
 	return (lifetime_value, signal_value, background_value)
 
 class D_meson:
@@ -132,10 +171,10 @@ class D_meson:
 	sys.stdout.flush()
 	num = 0
 	times = sort_parts()
-	while not num == 12:
+	while not num == parts_to_cut_data_in:
 		time_begin = times[num]
 		time_end = times[num+1]
-		print("	{0} | GpsTime(UnixTime) tussen {1} en {2}".format(num+1, converttime(time_begin), converttime(time_end)))
+		print("	{0} | Tussen {1} en {2}".format(num+1, converttime(time_begin), converttime(time_end)))
 		lifetime, signal_value, backround_value = histogram_values(time_begin, time_end)
 		print("	{0} | Lifetime = {1} | Signal = {2} | Background = {4}".format(num, lifetime, signal_value, backround_value))
 		sys.stdout.flush()
