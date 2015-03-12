@@ -1,5 +1,7 @@
 from ROOT import *
 from lifetime import *
+from datetime import datetime
+from time import mktime
 import math
 import sys
 
@@ -12,6 +14,15 @@ def sign(num):
 		return -1.0
 
 
+def converttime(time):
+	if not ":" in time:
+		unixtime = time/1000000
+		newtime = datetime.fromtimestamp(unixtime).strftime("%Y-%m-%d %H:%M:%S")
+	else:
+		newtimeseconds = mktime(datetime.strptime(time, "%Y-%m-%d %H:%M:%S").timetuple())
+		newtime = newtimeseconds*1000000
+	return newtime
+
 def low_high_time():
 	print("Laagste en hoogste tijden berekenen")
 	sys.stdout.flush()
@@ -22,8 +33,8 @@ def low_high_time():
 			low_time = entry.GpsTime
 		if entry.GpsTime > high_time:
 			high_time = entry.GpsTime
-	print("	Laagste tijd = {0}".format(low_time))
-	print("	Hoogste tijd = {0}".format(high_time))
+	print("	Laagste tijd = {0}".format(converttime(low_time)))
+	print("	Hoogste tijd = {0}".format(converttime(high_time)))
 	print("Laagste en hoogste tijden berekenen - klaar")
 	sys.stdout.flush()
 	return (low_time, high_time)
@@ -38,7 +49,7 @@ def sort_parts():
 	tijd_count = 0
 	for tijd in tijden:
 		tijd_count = tijd_count + 1
-		print("	{0} | {1}".format(tijd_count, tijd))
+		print("	{0} | {1}".format(tijd_count, converttime(tijd)))
 	print("Data verdelen in twaalf stukken - klaar")
 	sys.stdout.flush()
 	return tijden
@@ -124,7 +135,7 @@ class D_meson:
 	while not num == 12:
 		time_begin = times[num]
 		time_end = times[num+1]
-		print("	{0} | GpsTime(UnixTime) tussen {1} en {2}".format(num+1, time_begin, time_end))
+		print("	{0} | GpsTime(UnixTime) tussen {1} en {2}".format(num+1, converttime(time_begin), converttime(time_end)))
 		lifetime, signal_value, backround_value = histogram_values(time_begin, time_end)
 		print("	{0} | Lifetime = {1} | Signal = {2} | Background = {4}".format(num, lifetime, signal_value, backround_value))
 		sys.stdout.flush()
