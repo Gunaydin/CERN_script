@@ -1,0 +1,48 @@
+from ROOT import *
+from lifetime import *
+import math
+import functools
+LineColor = RooFit.LineColor
+htree = TFile.Open("root_real_data.root").Get("DecayTree")
+histo = TH1F("histo","plotOn test histo",1000,1000,3000)
+histolt = TH1F("histolt","plotOn test histolt",10000,-10,10)
+tijden = range(1302847200000000, 1319731200000000, 86400000000)
+def sign(num):
+	if num > 0 or (num == 0 and math.atan2(num, -1.0) > 0.0):
+		return 1.0
+	else:
+		return -1.0
+for entry in htree:
+	histo.Fill(entry.D_M)
+	histolt.Fill(eval(LT()))
+x = RooRealVar("x","x",1830,1900)
+x2 = RooRealVar("x2","x2",-10,10)
+m = RooRealVar("m","m test",300)
+s = RooRealVar("s","s test",500)
+a = RooRealVar("a","a test",0.0001,0.0002,0.0)
+t = RooRealVar("t","t",0,2)
+tshift = RooRealVar("thshift","tshift",0)
+alpha = RooRealVar("alpha","alpha",100)
+vlambda = RooRealVar("lambda","lambda",1)
+g1frac = RooRealVar("g1frac","g1frac test",0.3,0.0,0.5)
+g2frac = RooRealVar("g2frac","g2frac test",0.05,0.0,0.1)
+hdata = RooDataHist("data","plotOn test data with x",RooArgList(x),histo)
+hdatalt = RooDataHist("datalt","datalt",RooArgList(x2),histolt)
+m.setConstant(kFALSE)
+s.setConstant(kFALSE)
+#vlambda.setConstant(kFALSE)
+model = RooGaussian("model","gauss test",x,m,s)
+model2 = RooExponential("model2","exponential test",x,a)
+modelsum = RooAddPdf("modelsum","model+model2",RooArgList(model,model2),RooArgList(g1frac,g2frac))
+modeldecay = RooGenericPdf("modeldecay","model of the decay","(1 - exp[ -(x2-0)/100 ]) * exp[ - 1 * x2]",RooArgList(x2))
+frame = x.frame()
+framelt = x2.frame()
+modelsum.fitTo(hdata)
+#modeldecay.fitTo(hdatalt)
+hdata.plotOn(frame)
+hdata.statOn(frame)
+hdatalt.plotOn(framelt)
+hdatalt.statOn(framelt)
+modelsum.paramOn(frame)
+modelsum.plotOn(frame,LineColor(kRed))
+modeldecay.plotOn(framelt)
